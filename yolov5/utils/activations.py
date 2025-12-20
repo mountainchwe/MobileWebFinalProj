@@ -1,4 +1,4 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+# Ultralytics YOLOv5 🚀, AGPL-3.0 license
 """Activation functions."""
 
 import torch
@@ -11,7 +11,8 @@ class SiLU(nn.Module):
 
     @staticmethod
     def forward(x):
-        """Applies the Sigmoid-weighted Linear Unit (SiLU) activation function.
+        """
+        Applies the Sigmoid-weighted Linear Unit (SiLU) activation function.
 
         https://arxiv.org/pdf/1606.08415.pdf.
         """
@@ -23,7 +24,8 @@ class Hardswish(nn.Module):
 
     @staticmethod
     def forward(x):
-        """Applies the Hardswish activation function, compatible with TorchScript, CoreML, and ONNX.
+        """
+        Applies the Hardswish activation function, compatible with TorchScript, CoreML, and ONNX.
 
         Equivalent to x * F.hardsigmoid(x)
         """
@@ -74,7 +76,8 @@ class FReLU(nn.Module):
         self.bn = nn.BatchNorm2d(c1)
 
     def forward(self, x):
-        """Applies FReLU activation with max operation between input and BN-convolved input.
+        """
+        Applies FReLU activation with max operation between input and BN-convolved input.
 
         https://arxiv.org/abs/2007.11824
         """
@@ -82,10 +85,11 @@ class FReLU(nn.Module):
 
 
 class AconC(nn.Module):
-    """ACON activation (activate or not) function.
+    """
+    ACON activation (activate or not) function.
 
-    AconC: (p1*x-p2*x) * sigmoid(beta*(p1*x-p2*x)) + p2*x, beta is a learnable parameter See "Activate or Not: Learning
-    Customized Activation" https://arxiv.org/pdf/2009.04759.pdf.
+    AconC: (p1*x-p2*x) * sigmoid(beta*(p1*x-p2*x)) + p2*x, beta is a learnable parameter
+    See "Activate or Not: Learning Customized Activation" https://arxiv.org/pdf/2009.04759.pdf.
     """
 
     def __init__(self, c1):
@@ -102,10 +106,11 @@ class AconC(nn.Module):
 
 
 class MetaAconC(nn.Module):
-    """ACON activation (activate or not) function.
+    """
+    ACON activation (activate or not) function.
 
-    AconC: (p1*x-p2*x) * sigmoid(beta*(p1*x-p2*x)) + p2*x, beta is a learnable parameter See "Activate or Not: Learning
-    Customized Activation" https://arxiv.org/pdf/2009.04759.pdf.
+    AconC: (p1*x-p2*x) * sigmoid(beta*(p1*x-p2*x)) + p2*x, beta is a learnable parameter
+    See "Activate or Not: Learning Customized Activation" https://arxiv.org/pdf/2009.04759.pdf.
     """
 
     def __init__(self, c1, k=1, s=1, r=16):

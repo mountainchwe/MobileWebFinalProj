@@ -1,4 +1,4 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+# Ultralytics YOLOv5 🚀, AGPL-3.0 license
 
 from clearml import Task
 

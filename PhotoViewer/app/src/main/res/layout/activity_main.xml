@@ -11,9 +11,16 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="101dp"
         android:orientation="horizontal"
-        android:padding="50dp">
+        android:padding="20dp">
+
+        <Button
+            android:id="@+id/buttonRetrieveImage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="onClickRetrieveList"
+            android:text="Image 목록" />
 
         <Button
             android:id="@+id/btn_load"
@@ -32,12 +39,20 @@
             android:text="새로운 이미지 게시" />
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/textView"
+    <!-- Scrollable TextView -->
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="12dp"
-        android:text="..." />
+        android:layout_margin="12dp"
+        android:fillViewport="true">
+
+        <TextView
+            android:id="@+id/textView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="12dp"
+            android:text="..." />
+    </ScrollView>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"

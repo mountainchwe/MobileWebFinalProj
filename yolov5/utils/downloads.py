@@ -1,4 +1,4 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+# Ultralytics YOLOv5 🚀, AGPL-3.0 license
 """Download utils."""
 
 import logging
@@ -22,7 +22,8 @@ def is_url(url, check=True):
 
 
 def gsutil_getsize(url=""):
-    """Returns the size in bytes of a file at a Google Cloud Storage URL using `gsutil du`.
+    """
+    Returns the size in bytes of a file at a Google Cloud Storage URL using `gsutil du`.
 
     Returns 0 if the command fails or output is empty.
     """
@@ -57,7 +58,8 @@ def curl_download(url, filename, *, silent: bool = False) -> bool:
 
 
 def safe_download(file, url, url2=None, min_bytes=1e0, error_msg=""):
-    """Downloads a file from a URL (or alternate URL) to a specified path if file is above a minimum size.
+    """
+    Downloads a file from a URL (or alternate URL) to a specified path if file is above a minimum size.
 
     Removes incomplete downloads.
     """
@@ -84,7 +86,9 @@ def safe_download(file, url, url2=None, min_bytes=1e0, error_msg=""):
 
 
 def attempt_download(file, repo="ultralytics/yolov5", release="v7.0"):
-    """Download a file from GitHub release assets or via direct URL if not found locally."""
+    """Downloads a file from GitHub release assets or via direct URL if not found locally, supporting backup
+    versions.
+    """
     from utils.general import LOGGER
 
     def github_assets(repository, version="latest"):

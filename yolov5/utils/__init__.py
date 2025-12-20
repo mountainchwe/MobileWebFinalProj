@@ -1,4 +1,4 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+# Ultralytics YOLOv5 🚀, AGPL-3.0 license
 """utils/initialization."""
 
 import contextlib
@@ -44,7 +44,8 @@ def threaded(func):
 
 
 def join_threads(verbose=False):
-    """Joins all daemon threads, optionally printing their names if verbose is True.
+    """
+    Joins all daemon threads, optionally printing their names if verbose is True.
 
     Example: atexit.register(lambda: join_threads())
     """
@@ -82,7 +83,7 @@ def notebook_init(verbose=True):
     if verbose:
         gb = 1 << 30  # bytes to GiB (1024 ** 3)
         ram = psutil.virtual_memory().total
-        total, _used, free = shutil.disk_usage("/")
+        total, used, free = shutil.disk_usage("/")
         with contextlib.suppress(Exception):  # clear display if ipython is installed
             from IPython import display
 

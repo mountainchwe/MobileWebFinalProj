@@ -1,4 +1,4 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+# Ultralytics YOLOv5 🚀, AGPL-3.0 license
 """Run a Flask REST API exposing one or more YOLOv5s models."""
 
 import argparse

@@ -32,7 +32,7 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
 
     TextView textView;
-    String site_url = "http://10.0.2.2:8000";
+    String site_url = "http://10.0.2.2:8000"; //link to django
 
     CloadImage taskDownload;
     PutPost taskUpload;
@@ -44,6 +44,11 @@ public class MainActivity extends AppCompatActivity {
         textView = findViewById(R.id.textView);
     }
 
+    public void onClickRetrieveList(View v) {
+        CloadImageNew taskDownloadNew = new CloadImageNew();
+        taskDownloadNew.execute(site_url+"/api/posts/");
+        Toast.makeText(getApplicationContext(), "Downloading from new API...", Toast.LENGTH_LONG).show();
+    }
     // ========================== DOWNLOAD BUTTON =============================
     public void onClickDownload(View v) {
 
@@ -61,6 +66,70 @@ public class MainActivity extends AppCompatActivity {
         taskUpload = new PutPost();
         taskUpload.execute(site_url + "/api_root/Post/");
         Toast.makeText(getApplicationContext(), "Uploading…", Toast.LENGTH_LONG).show();
+    }
+
+    private class CloadImageNew extends AsyncTask<String, Integer, String> {
+
+        @Override
+        protected String doInBackground(String... urls) {
+            StringBuilder result = new StringBuilder();
+
+            try {
+                String apiUrl = urls[0];
+                String token = "1d2635363469363c7d2c2f2a61518b163ee153f2";
+
+                URL urlAPI = new URL(apiUrl);
+                HttpURLConnection conn = (HttpURLConnection) urlAPI.openConnection();
+                conn.setRequestProperty("Authorization", "Token " + token);
+                conn.setRequestMethod("GET");
+                conn.setConnectTimeout(3000);
+                conn.setReadTimeout(3000);
+
+                int responseCode = conn.getResponseCode();
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        result.append(line);
+                    }
+                }
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            return result.toString();
+        }
+
+        @Override
+        protected void onPostExecute(String json) {
+            if (json.isEmpty()) {
+                textView.setText("No data returned.");
+            } else {
+                try {
+                    JSONArray jsonArray = new JSONArray(json);
+                    StringBuilder formatted = new StringBuilder();
+
+                    for (int i = 0; i < jsonArray.length(); i++) {
+                        JSONObject item = jsonArray.getJSONObject(i);
+
+                        formatted.append("Post #").append(i + 1).append("\n");
+                        formatted.append("Title: ").append(item.getString("title")).append("\n");
+                        formatted.append("Text: ").append(item.getString("text")).append("\n");
+                        formatted.append("Created: ").append(item.getString("created_date")).append("\n");
+                        formatted.append("Published: ").append(item.getString("published_date")).append("\n");
+                        formatted.append("Image: ").append(item.getString("image")).append("\n");
+                        formatted.append("-----------------------------\n\n");
+                    }
+
+                    textView.setText(formatted.toString());
+
+                } catch (JSONException e) {
+                    textView.setText("Error parsing JSON");
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
 

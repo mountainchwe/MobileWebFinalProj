@@ -1,4 +1,4 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+# Ultralytics YOLOv5 🚀, AGPL-3.0 license
 
 name: Close stale issues
 on:
@@ -7,13 +7,9 @@ on:
 
 jobs:
   stale:
-    permissions:
-      issues: write
-      pull-requests: write
-      contents: read
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/stale@v10
+      - uses: actions/stale@v9
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 

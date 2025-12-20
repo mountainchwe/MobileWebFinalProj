@@ -1,11 +1,7 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
-
+# Ultralytics YOLOv5 🚀, AGPL-3.0 license
 # Builds ultralytics/yolov5:latest images on DockerHub https://hub.docker.com/r/ultralytics/yolov5
 
 name: Publish Docker Images
-
-permissions:
-  contents: read
 
 on:
   push:
@@ -19,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0 # copy full .git directory to access full git history in Docker images
 

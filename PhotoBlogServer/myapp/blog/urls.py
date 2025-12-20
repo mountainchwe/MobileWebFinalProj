@@ -1,15 +1,19 @@
-from django.urls import path 
-from . import views 
-from django.urls import include
-from rest_framework import routers
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import blogImage
+from . import views
 
-router = routers.DefaultRouter()
-router.register(r'Post', views.blogImage)
+router_root = DefaultRouter()
+router_root.register(r'Post', blogImage, basename='post-root')
 
-urlpatterns = [ 
-    path('', views.post_list, name='post_list'), 
-    path('api_root/', include(router.urls)),
-    path('post/<int:pk>/', views.post_detail, name='post_detail'), 
-    path('post/new/', views.post_new, name='post_new'), 
+router_api = DefaultRouter()
+router_api.register(r'posts', blogImage, basename='post-api')
+
+urlpatterns = [
+    path('', views.post_list, name='post_list'),
+    path('api_root/', include(router_root.urls)),  # /api_root/Post/
+    path('api/', include(router_api.urls)),        # /api/posts/ new task api
+    path('post/<int:pk>/', views.post_detail, name='post_detail'),
+    path('post/new/', views.post_new, name='post_new'),
     path('post/<int:pk>/edit/', views.post_edit, name='post_edit'),
 ]
