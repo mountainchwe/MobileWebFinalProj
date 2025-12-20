@@ -1,9 +1,15 @@
 package com.example.photoviewer;
 
+import android.content.ContentValues;
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -24,6 +30,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
@@ -35,7 +42,9 @@ public class MainActivity extends AppCompatActivity {
     String site_url = "http://10.0.2.2:8000"; //link to django
 
     CloadImage taskDownload;
-    PutPost taskUpload;
+
+    CloadImagePerson filterPerson;
+    DownloadImagesTask imageListDownload;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,11 +53,11 @@ public class MainActivity extends AppCompatActivity {
         textView = findViewById(R.id.textView);
     }
 
-    public void onClickRetrieveList(View v) {
-        CloadImageNew taskDownloadNew = new CloadImageNew();
-        taskDownloadNew.execute(site_url+"/api/posts/");
-        Toast.makeText(getApplicationContext(), "Downloading from new API...", Toast.LENGTH_LONG).show();
+    public void onClickImageListDownload(View v){
+        imageListDownload = new DownloadImagesTask(this);
+        imageListDownload.execute(site_url + "/api/posts/");
     }
+
     // ========================== DOWNLOAD BUTTON =============================
     public void onClickDownload(View v) {
 
@@ -62,91 +71,114 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // ============================ UPLOAD BUTTON =============================
-    public void onClickUpload(View v) {
-        taskUpload = new PutPost();
-        taskUpload.execute(site_url + "/api_root/Post/");
-        Toast.makeText(getApplicationContext(), "Uploading…", Toast.LENGTH_LONG).show();
-    }
+    public class DownloadImagesTask extends AsyncTask<String, Void, Void> {
 
-    private class CloadImageNew extends AsyncTask<String, Integer, String> {
+        private Context context;
+
+        public DownloadImagesTask(Context context) {
+            this.context = context;
+        }
 
         @Override
-        protected String doInBackground(String... urls) {
-            StringBuilder result = new StringBuilder();
+        protected Void doInBackground(String... urls) {
+            String apiUrl = urls[0];
 
             try {
-                String apiUrl = urls[0];
-                String token = "1d2635363469363c7d2c2f2a61518b163ee153f2";
-
-                URL urlAPI = new URL(apiUrl);
-                HttpURLConnection conn = (HttpURLConnection) urlAPI.openConnection();
-                conn.setRequestProperty("Authorization", "Token " + token);
+                // Step 1: Fetch JSON list of posts
+                URL url = new URL(apiUrl);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
-                conn.setConnectTimeout(3000);
-                conn.setReadTimeout(3000);
 
-                int responseCode = conn.getResponseCode();
-                if (responseCode == HttpURLConnection.HTTP_OK) {
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        result.append(line);
+                BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                StringBuilder response = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    response.append(line);
+                }
+                reader.close();
+
+                // Step 2: Parse JSON (assuming array of posts with "image" field)
+                JSONArray posts = new JSONArray(response.toString());
+                for (int i = 0; i < posts.length(); i++) {
+                    JSONObject post = posts.getJSONObject(i);
+                    String imageUrl = post.getString("image"); // adjust key if needed
+
+                    // Step 3: Download each image into a Bitmap
+                    Bitmap bitmap = downloadBitmap(imageUrl);
+
+                    // Step 4: Save Bitmap into public Pictures folder
+                    if (bitmap != null) {
+                        saveImageToGallery(context, bitmap, "post_" + i + ".jpg");
                     }
                 }
 
-            } catch (IOException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
 
-            return result.toString();
+            return null;
+        }
+
+        // Helper: download image from URL into Bitmap
+        private Bitmap downloadBitmap(String imageUrl) {
+            try {
+                URL url = new URL(imageUrl);
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.connect();
+                InputStream input = connection.getInputStream();
+                return BitmapFactory.decodeStream(input);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
+
+        // Helper: save Bitmap into public Pictures folder via MediaStore
+        private void saveImageToGallery(Context context, Bitmap bitmap, String fileName) {
+            ContentValues values = new ContentValues();
+            values.put(MediaStore.Images.Media.DISPLAY_NAME, fileName);
+            values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
+            values.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES);
+
+            Uri uri = context.getContentResolver().insert(
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values
+            );
+
+            try (OutputStream out = context.getContentResolver().openOutputStream(uri)) {
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
+                Log.d("DownloadImagesTask", "Saved: " + fileName);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
         @Override
-        protected void onPostExecute(String json) {
-            if (json.isEmpty()) {
-                textView.setText("No data returned.");
-            } else {
-                try {
-                    JSONArray jsonArray = new JSONArray(json);
-                    StringBuilder formatted = new StringBuilder();
-
-                    for (int i = 0; i < jsonArray.length(); i++) {
-                        JSONObject item = jsonArray.getJSONObject(i);
-
-                        formatted.append("Post #").append(i + 1).append("\n");
-                        formatted.append("Title: ").append(item.getString("title")).append("\n");
-                        formatted.append("Text: ").append(item.getString("text")).append("\n");
-                        formatted.append("Created: ").append(item.getString("created_date")).append("\n");
-                        formatted.append("Published: ").append(item.getString("published_date")).append("\n");
-                        formatted.append("Image: ").append(item.getString("image")).append("\n");
-                        formatted.append("-----------------------------\n\n");
-                    }
-
-                    textView.setText(formatted.toString());
-
-                } catch (JSONException e) {
-                    textView.setText("Error parsing JSON");
-                    e.printStackTrace();
-                }
-            }
+        protected void onPostExecute(Void result) {
+            Toast.makeText(context, "Images downloaded to Gallery!", Toast.LENGTH_LONG).show();
         }
     }
 
+    public void onFilterPerson(View v) {
 
-    // ========================================================================
-    //                                DOWNLOAD
-    // ========================================================================
+        // Create a new task
+        filterPerson = new CloadImagePerson();
 
+        // Execute with the filter parameter ?title=person
+        filterPerson.execute(site_url + "/api_root/posts/");
+
+        Toast.makeText(getApplicationContext(), "Filtering person posts…", Toast.LENGTH_LONG).show();
+    }
+
+    // AsyncTask to fetch and display images
     private class CloadImage extends AsyncTask<String, Integer, List<String>> {
 
         @Override
         protected List<String> doInBackground(String... urls) {
-
             List<String> imageUrls = new ArrayList<>();
 
             try {
                 String apiUrl = urls[0];
-                String token = "1d2635363469363c7d2c2f2a61518b163ee153f2";
+                String token = "1d2635363469363c7d2c2f2a61518b163ee153f2"; // replace with your token
 
                 URL urlAPI = new URL(apiUrl);
                 HttpURLConnection conn = (HttpURLConnection) urlAPI.openConnection();
@@ -157,7 +189,6 @@ public class MainActivity extends AppCompatActivity {
 
                 int responseCode = conn.getResponseCode();
                 if (responseCode == HttpURLConnection.HTTP_OK) {
-
                     BufferedReader reader =
                             new BufferedReader(new InputStreamReader(conn.getInputStream()));
 
@@ -176,7 +207,9 @@ public class MainActivity extends AppCompatActivity {
                         // image field example: "/media/blog_image/2025/11/18/myphoto.png"
                         String imagePath = item.getString("image");
 
-                        imageUrls.add(imagePath);
+                        // prepend site_url if needed
+                        String fullUrl = site_url + imagePath;
+                        imageUrls.add(fullUrl);
                     }
                 }
 
@@ -189,13 +222,12 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(List<String> imageUrls) {
-
             if (imageUrls.isEmpty()) {
-                textView.setText("불러올 이미지가 없습니다.");
+                textView.setText("불러올 이미지가 없습니다."); // "No images to load"
                 return;
             }
 
-            textView.setText("이미지 로드 성공!");
+            textView.setText("이미지 로드 성공!"); // "Images loaded successfully!"
 
             RecyclerView recyclerView = findViewById(R.id.recyclerView);
             ImageAdapter adapter = new ImageAdapter(imageUrls);
@@ -204,82 +236,71 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
-
-    // ========================================================================
-    //                                UPLOAD
-    // ========================================================================
-
-    private class PutPost extends AsyncTask<String, Void, Void> {
+    private class CloadImagePerson extends AsyncTask<String, Integer, List<String>> {
 
         @Override
-        protected Void doInBackground(String... urls) {
+        protected List<String> doInBackground(String... urls) {
+            List<String> imageUrls = new ArrayList<>();
+
             try {
                 String apiUrl = urls[0];
-                String token = "1d2635363469363c7d2c2f2a61518b163ee153f2";
+                String token = "1d2635363469363c7d2c2f2a61518b163ee153f2"; // replace with your token
 
-                // Load sample image
-                Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.test);
-                if (bitmap == null) return null;
-
-                // Save to cache file
-                File file = new File(getCacheDir(), "upload.png");
-                FileOutputStream out = new FileOutputStream(file);
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
-                out.close();
-
-                String boundary = "===" + System.currentTimeMillis() + "===";
-                String LINE_FEED = "\r\n";
-
-                HttpURLConnection conn =
-                        (HttpURLConnection) new URL(apiUrl).openConnection();
-                conn.setDoOutput(true);
-                conn.setRequestMethod("POST");
+                URL urlAPI = new URL(apiUrl);
+                HttpURLConnection conn = (HttpURLConnection) urlAPI.openConnection();
                 conn.setRequestProperty("Authorization", "Token " + token);
-                conn.setRequestProperty("Accept", "application/json");
-                conn.setRequestProperty("Content-Type",
-                        "multipart/form-data; boundary=" + boundary);
+                conn.setRequestMethod("GET");
+                conn.setConnectTimeout(3000);
+                conn.setReadTimeout(3000);
 
-                DataOutputStream os = new DataOutputStream(conn.getOutputStream());
+                int responseCode = conn.getResponseCode();
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    BufferedReader reader =
+                            new BufferedReader(new InputStreamReader(conn.getInputStream()));
 
-                // ----- TITLE -----
-                os.writeBytes("--" + boundary + LINE_FEED);
-                os.writeBytes("Content-Disposition: form-data; name=\"title\"" + LINE_FEED);
-                os.writeBytes(LINE_FEED);
-                os.writeBytes("Android Upload Test" + LINE_FEED);
+                    StringBuilder result = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        result.append(line);
+                    }
 
-                // ----- TEXT -----
-                os.writeBytes("--" + boundary + LINE_FEED);
-                os.writeBytes("Content-Disposition: form-data; name=\"text\"" + LINE_FEED);
-                os.writeBytes(LINE_FEED);
-                os.writeBytes("Uploaded via Android client" + LINE_FEED);
+                    JSONArray jsonArray = new JSONArray(result.toString());
 
-                // ----- IMAGE -----
-                os.writeBytes("--" + boundary + LINE_FEED);
-                os.writeBytes("Content-Disposition: form-data; name=\"image\"; filename=\"upload.png\"" + LINE_FEED);
-                os.writeBytes("Content-Type: image/png" + LINE_FEED);
-                os.writeBytes(LINE_FEED);
+                    for (int i = 0; i < jsonArray.length(); i++) {
+                        JSONObject item = jsonArray.getJSONObject(i);
 
-                FileInputStream fis = new FileInputStream(file);
-                byte[] buffer = new byte[4096];
-                int bytesRead;
-                while ((bytesRead = fis.read(buffer)) != -1) {
-                    os.write(buffer, 0, bytesRead);
+                        // Only keep posts with title="person"
+                        String title = item.getString("title");
+                        if ("person".equalsIgnoreCase(title)) {
+                            String imagePath = item.getString("image");
+
+                            // prepend site_url if needed
+                            String fullUrl = site_url + imagePath;
+                            imageUrls.add(fullUrl);
+                        }
+                    }
                 }
-                fis.close();
-                os.writeBytes(LINE_FEED);
 
-                // CLOSE
-                os.writeBytes("--" + boundary + "--" + LINE_FEED);
-                os.flush();
-                os.close();
-
-                System.out.println("UPLOAD RESPONSE CODE = " + conn.getResponseCode());
-
-            } catch (Exception e) {
+            } catch (IOException | JSONException e) {
                 e.printStackTrace();
             }
-            return null;
+
+            return imageUrls;
+        }
+
+        @Override
+        protected void onPostExecute(List<String> imageUrls) {
+            if (imageUrls.isEmpty()) {
+                textView.setText("No person images found.");
+                return;
+            }
+
+            textView.setText("Person images loaded successfully!");
+
+            RecyclerView recyclerView = findViewById(R.id.recyclerView);
+            ImageAdapter adapter = new ImageAdapter(imageUrls);
+            recyclerView.setLayoutManager(new LinearLayoutManager(MainActivity.this));
+            recyclerView.setAdapter(adapter);
         }
     }
 }
