@@ -49,3 +49,20 @@ body {
  object-fit: cover;
  width: 80%
  }
+
+.top-menu {
+    display: flex;
+    flex-direction: column; /* stack vertically */
+    align-items: center;    /* center horizontally */
+    text-decoration: none;
+    padding: 8px;
+}
+
+.top-menu .glyphicon {
+    font-size: 24px; /* make icon bigger */
+    margin-bottom: 4px;
+}
+
+.top-menu .label {
+    font-size: 12px;
+}
