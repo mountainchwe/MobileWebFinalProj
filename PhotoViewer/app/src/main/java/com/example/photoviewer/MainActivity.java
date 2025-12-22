@@ -44,6 +44,7 @@ public class MainActivity extends AppCompatActivity {
     CloadImage taskDownload;
 
     CloadImagePerson filterPerson;
+
     DownloadImagesTask imageListDownload;
 
     @Override
