@@ -38,6 +38,11 @@
                 android:text="Sync from Server" />
         </LinearLayout>
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:orientation="horizontal"
+            >
         <Button
             android:id="@+id/personFilter"
             android:layout_width="150dp"
@@ -46,6 +51,16 @@
             android:layout_gravity="center"
             android:onClick="onFilterPerson"
             android:text="Person Detection Filter" />
+
+        <Button
+            android:id="@+id/downloadPerson"
+            android:layout_width="150dp"
+            android:layout_height="40dp"
+            android:layout_gravity="center"
+            android:layout_weight="1"
+            android:onClick="onDownloadPerson"
+            android:text="Download Person Detected Images" />
+        </LinearLayout>
     </LinearLayout>
 
     <TextView

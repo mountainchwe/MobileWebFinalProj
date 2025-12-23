@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
+from django.http import JsonResponse
 from .models import Post
 from .forms import PostForm
 from rest_framework import viewsets
@@ -17,11 +18,17 @@ class blogImage(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(author=None, published_date=timezone.now())
 
+class PersonPostViewSet(viewsets.ReadOnlyModelViewSet): # a new viewset to filter posts
+    serializer_class = PostSerializer
+
+    def get_queryset(self):
+        return Post.objects.filter(title="person")
+    
 # Create your views here.
 def post_list(request):
     title_filter=request.GET.get('title')
     if title_filter:
-        posts = Post.objects.filter(title=title_filter)
+        posts = Post.objects.filter(title=title_filter) # for django website filter
     else:
         posts = Post.objects.filter(published_date__lte=timezone.now()).order_by('published_date')
     return render(request, 'blog/post_list.html', {'posts': posts})
