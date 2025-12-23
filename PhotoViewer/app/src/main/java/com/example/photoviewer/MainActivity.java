@@ -3,8 +3,10 @@ package com.example.photoviewer;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -134,16 +136,41 @@ public class MainActivity extends AppCompatActivity {
             values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
             values.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES);
 
-            Uri uri = context.getContentResolver().insert(
-                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values
-            );
+            Uri uri = context.getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
 
-            try (OutputStream out = context.getContentResolver().openOutputStream(uri)) {
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
-                Log.d("DownloadImagesTask", "Saved: " + fileName);
-            } catch (Exception e) {
-                e.printStackTrace();
+            if (uri != null) {
+                try (OutputStream out = context.getContentResolver().openOutputStream(uri)) {
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
+                    Log.d("DownloadImagesTask", "Saved: " + fileName);
+
+                    // Get the actual file path from the Uri
+                    String imagePath = getRealPathFromURI(context, uri);
+                    if (imagePath != null) {
+                        MediaScannerConnection.scanFile(
+                                context,
+                                new String[]{ imagePath },
+                                null,
+                                (path, scannedUri) -> {
+                                    Log.i("MediaScanner", "Scanned " + path + " -> uri=" + scannedUri);
+                                }
+                        );
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
+        }
+
+        private String getRealPathFromURI(Context context, Uri uri) {
+            Cursor cursor = context.getContentResolver().query(uri, null, null, null, null);
+            if (cursor != null) {
+                int index = cursor.getColumnIndex(MediaStore.Images.Media.DATA);
+                cursor.moveToFirst();
+                String path = cursor.getString(index);
+                cursor.close();
+                return path;
+            }
+            return null;
         }
 
         @Override
@@ -233,7 +260,7 @@ public class MainActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
 
-            // 👇 Force Gallery/Photos to notice the new image
+            //  Force Gallery/Photos to notice the new image
             context.sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, uri));
         }
 
